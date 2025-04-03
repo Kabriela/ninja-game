@@ -118,7 +118,7 @@
 
     function checkWin() {
       if (gameMap[ninjaPos.y][ninjaPos.x] === 4 && !hasSushi) {
-        alert("You need to pick up the sushi before going to the goal!");
+        alert("Nejdřív vyzvedni sushi než vyrazíš do cíle!");
       } else if (gameMap[ninjaPos.y][ninjaPos.x] === 4 && hasSushi) {
         hasSushi = false;
         score++;
@@ -142,7 +142,7 @@
           gameMap[ninjaPos.y][ninjaPos.x] = 0;
           render();
         } else {
-          alert("No sushi here!");
+          alert("Tady žádný sushi není!");
         }
       },
       putSushi() {
