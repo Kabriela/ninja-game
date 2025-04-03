@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mini Ninja Game - Custom Ninja</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    #game { display: grid; grid-template-columns: repeat(30, 28px); grid-gap: 1px; margin: 20px; }
+    .cell { width: 28px; height: 28px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 14px; overflow: hidden; }
+    .ninja img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .sushi { background-color: #d2f8d2; }
+    .goal { background-color: #ffe0e0; }
+    .wall { background-color: #b0b0b0; }
+    button { margin: 4px; font-size: 16px; padding: 6px 12px; }
+
+    @keyframes pop {
+      0% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Mini Ninja Game - Custom Ninja</h2>
+  <div id="game"></div>
+  <div>
+    <button onclick="ninja.goLeft()">Left</button>
+    <button onclick="ninja.goRight()">Right</button>
+    <button onclick="ninja.goUp()">Up</button>
+    <button onclick="ninja.goDown()">Down</button>
+    <button onclick="ninja.pickSushi()">🤚 Pick Sushi</button>
+    <button onclick="ninja.putSushi()">Put Sushi</button>
+    <button onclick="generateMap()">🔄 New Map</button>
+  </div>
+  <p id="message"></p>
+  <p id="score">Score: 0</p>
+
+  <script>
+    const size = 30;
+    let gameMap, ninjaPos, hasSushi, score;
+    const game = document.getElementById("game");
+    const message = document.getElementById("message");
+    const scoreDisplay = document.getElementById("score");
+
+    const ninjaImgURL = "./Vinc-res.jpg";
+    let wallIcons = [];
+
+    function getRandomEmptyCell(map) {
+      let x, y;
+      do {
+        x = Math.floor(Math.random() * size);
+        y = Math.floor(Math.random() * size);
+      } while (map[y][x] !== 0);
+      return { x, y };
+    }
+
+    function generateMap() {
+      gameMap = Array.from({ length: size }, () => Array(size).fill(0));
+      message.textContent = "";
+      score = 0;
+      updateScore();
+      hasSushi = false;
+      wallIcons = [];
+
+      const icons = ["🌸", "🌟", "🌵", "🪨", "🍄"];
+      for (let i = 0; i < size * 2; i++) {
+        const { x, y } = getRandomEmptyCell(gameMap);
+        gameMap[y][x] = 1;
+        wallIcons.push({ x, y, icon: icons[Math.floor(Math.random() * icons.length)] });
+      }
+
+      const sushiPos = getRandomEmptyCell(gameMap);
+      gameMap[sushiPos.y][sushiPos.x] = 3;
+
+      const goalPos = getRandomEmptyCell(gameMap);
+      gameMap[goalPos.y][goalPos.x] = 4;
+
+      const ninjaStart = getRandomEmptyCell(gameMap);
+      gameMap[ninjaStart.y][ninjaStart.x] = 2;
+      ninjaPos = { x: ninjaStart.x, y: ninjaStart.y };
+
+      render();
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = `Score: ${score}`;
+    }
+
+    function render() {
+      game.innerHTML = "";
+      for (let y = 0; y < gameMap.length; y++) {
+        for (let x = 0; x < gameMap[y].length; x++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+
+          if (ninjaPos.x === x && ninjaPos.y === y) {
+            cell.classList.add("ninja");
+            const img = document.createElement("img");
+            img.src = ninjaImgURL;
+            img.alt = "Ninja";
+            cell.appendChild(img);
+          } else if (gameMap[y][x] === 1) {
+            cell.classList.add("wall");
+            const iconData = wallIcons.find(i => i.x === x && i.y === y);
+            if (iconData) cell.textContent = iconData.icon;
+          } else if (gameMap[y][x] === 3) {
+            cell.classList.add("sushi");
+            cell.textContent = "🍣";
+          } else if (gameMap[y][x] === 4) {
+            cell.classList.add("goal");
+            cell.textContent = "🏁";
+          }
+
+          game.appendChild(cell);
+        }
+      }
+    }
+
+    function checkWin() {
+      if (gameMap[ninjaPos.y][ninjaPos.x] === 4 && !hasSushi) {
+        alert("You need to pick up the sushi before going to the goal!");
+      } else if (gameMap[ninjaPos.y][ninjaPos.x] === 4 && hasSushi) {
+        hasSushi = false;
+        score++;
+        updateScore();
+        message.innerHTML = "<span style='color: green; font-weight: bold; animation: pop 0.5s ease;'>🎉 Success! You delivered the sushi to the goal!</span>";
+      }
+    }
+
+    function isWall(x, y) {
+      return gameMap[y] && gameMap[y][x] === 1;
+    }
+
+    const ninja = {
+      goLeft()  { if (ninjaPos.x > 0 && !isWall(ninjaPos.x - 1, ninjaPos.y)) ninjaPos.x--; render(); checkWin(); },
+      goRight() { if (ninjaPos.x < size - 1 && !isWall(ninjaPos.x + 1, ninjaPos.y)) ninjaPos.x++; render(); checkWin(); },
+      goUp()    { if (ninjaPos.y > 0 && !isWall(ninjaPos.x, ninjaPos.y - 1)) ninjaPos.y--; render(); checkWin(); },
+      goDown()  { if (ninjaPos.y < size - 1 && !isWall(ninjaPos.x, ninjaPos.y + 1)) ninjaPos.y++; render(); checkWin(); },
+      pickSushi() {
+        if (gameMap[ninjaPos.y][ninjaPos.x] === 3) {
+          hasSushi = true;
+          gameMap[ninjaPos.y][ninjaPos.x] = 0;
+          render();
+        } else {
+          alert("No sushi here!");
+        }
+      },
+      putSushi() {
+        if (hasSushi) {
+          if (gameMap[ninjaPos.y][ninjaPos.x] === 4) {
+            hasSushi = false;
+            render();
+            checkWin();
+          } else {
+            alert("You must place the sushi on the goal!");
+          }
+        } else {
+          alert("You have successfully delivered sushi!");
+        }
+      }
+    };
+
+    document.addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "ArrowLeft": ninja.goLeft(); break;
+        case "ArrowRight": ninja.goRight(); break;
+        case "ArrowUp": ninja.goUp(); break;
+        case "ArrowDown": ninja.goDown(); break;
+        case "p": ninja.pickSushi(); break;
+        case "o": ninja.putSushi(); break;
+        case "Enter": ninja.pickSushi(); break;
+        case "Shift":
+          if (event.code === "ShiftRight") {
+            ninja.putSushi();
+          }
+          break;
+      }
+    });
+
+    generateMap();
+  </script>
+</body>
+</html>
